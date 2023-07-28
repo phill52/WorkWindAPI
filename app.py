@@ -2,6 +2,7 @@ from flask import Flask,  jsonify, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from .config import Config, DevelopmentConfig, ProductionConfig, StagingConfig, TestingConfig
+from .middleware import verify_token
 import os
 
 
@@ -19,6 +20,7 @@ def index():
     return jsonify({"message": "Hello, World!"})
 
 @app.route('/users', methods=['GET', 'POST'])
+@verify_token
 def users():
     if request.method == 'POST':
         if request.is_json:
@@ -27,6 +29,7 @@ def users():
             existing_user = UserModel.query.filter_by(username=username).first()
             if existing_user is not None:
                 return jsonify({"error": "User already exists"}), 409
+            aid = request.aid
             new_user=UserModel(auth_id=data['auth_id'], username=data['username'])
             db.session.add(new_user)
             db.session.commit()
@@ -46,6 +49,19 @@ def users():
                 "username": user.username
             } for user in users]
         return jsonify(results)
+
+@app.route('/users/auth/<auth_id>', methods=['GET'])
+@verify_token
+def handle_authid(auth_id):
+    if request.method == 'GET':
+        aid = request.aid
+        user=UserModel.query.filter(UserModel.auth_id==aid).first()
+        if user is None:
+            return jsonify({"data":False})
+        else:
+            return jsonify({"data": user})
+
+
 
 @app.route('/users/<user_id>', methods=['GET', 'PUT', 'DELETE'])
 def handle_userid(user_id):
@@ -80,6 +96,7 @@ def handle_userid(user_id):
             db.session.delete(user)
             db.session.commit()
             return jsonify({"message": "User deleted successfully"}), 200
+
 
 
 if __name__ == '__main__':
