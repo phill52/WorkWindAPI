@@ -7,7 +7,7 @@ class UserModel(db.Model):
     __tablename__ = 'users'
 
     uid = db.Column(BIGINT, primary_key=True, default=TSID.create().number)
-    auth_id = db.Column(db.Integer())
+    auth_id = db.Column(db.String(255), unique=True)
     username = db.Column(db.String(32), index=True, unique=True)
 
     def __init__(self, auth_id, username):

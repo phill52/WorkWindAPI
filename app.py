@@ -1,9 +1,23 @@
-from flask import Flask,  jsonify, request, abort
+from flask import Flask,  jsonify, request, abort, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from .config import Config, DevelopmentConfig, ProductionConfig, StagingConfig, TestingConfig
-from .middleware import verify_token
 import os
+from .validator import Auth0JWTBearerTokenValidator
+from authlib.integrations.flask_oauth2 import ResourceProtector
+from flask_cors import CORS
+
+AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
+API_IDENTIFIER = os.environ.get("API_IDENTIFIER")
+SECRET = os.environ.get("AUTH0_SECRET")
+ALGORITHM = os.environ.get("ALGORITHM")
+
+require_auth  = ResourceProtector()
+validator = Auth0JWTBearerTokenValidator(
+    AUTH0_DOMAIN,
+    API_IDENTIFIER
+)
+require_auth.register_token_validator(validator)
 
 
 app=Flask(__name__)
@@ -11,16 +25,16 @@ app.config.from_object(DevelopmentConfig)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
 
+
 from .models import *
 migrate = Migrate(app, db)
-
+CORS(app)
 
 @app.route('/')
 def index():
     return jsonify({"message": "Hello, World!"})
 
 @app.route('/users', methods=['GET', 'POST'])
-@verify_token
 def users():
     if request.method == 'POST':
         if request.is_json:
@@ -50,11 +64,12 @@ def users():
             } for user in users]
         return jsonify(results)
 
-@app.route('/users/auth/<auth_id>', methods=['GET'])
-@verify_token
-def handle_authid(auth_id):
+@app.route('/auth/users', methods=['GET'])
+@require_auth()
+def handle_authid():
     if request.method == 'GET':
-        aid = request.aid
+        aid = g.get('aid') 
+        print("this aids", aid)
         user=UserModel.query.filter(UserModel.auth_id==aid).first()
         if user is None:
             return jsonify({"data":False})
