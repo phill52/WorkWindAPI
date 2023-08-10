@@ -30,6 +30,12 @@ from .models import *
 migrate = Migrate(app, db)
 CORS(app)
 
+# Function to return the current user
+@require_auth()
+def get_user():
+    aid = g.get('aid')
+    return user if (user := UserModel.query.filter(UserModel.auth_id == aid).first()) is not None else False
+
 @app.route('/')
 def index():
     return jsonify({"message": "Hello, World!"})
@@ -112,6 +118,28 @@ def handle_userid(user_id):
             db.session.commit()
             return jsonify({"message": "User deleted successfully"}), 200
 
+# Project routes
+
+@app.route('/project', methods=['POST'])
+@require_auth()
+def project():
+    if request.method == 'POST':
+        if not request.is_json:
+            return jsonify({"error": "The request payload is not in JSON format"}),400
+        data = request.get_json()
+        name = data['name']
+        if not (user := get_user()):
+            return jsonify({"error": "Could not identify user"}),400
+        if ProjectModel.query.filter_by(name=name, user_id=user.uid).first() is not None:
+            return jsonify({"error": "Project already exists"}), 409
+        new_project = ProjectModel(name = name, created_by = user.uid)
+        db.session.add(new_project)
+        db.session.commit()
+        return jsonify({
+            "pid": new_project.pid,
+            "name": new_project.name,
+            "created_by": new_project.created_by
+        })
 
 
 if __name__ == '__main__':
