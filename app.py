@@ -34,6 +34,7 @@ from .models import *
 migrate = Migrate(app, db)
 CORS(app)
 
+
 # Function to return the current user
 @require_auth()
 def get_user():
