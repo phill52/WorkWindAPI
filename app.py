@@ -47,8 +47,10 @@ def get_user():
         else False
     )
 
+
 # Creating a Bleach sanitizer cleaner instance
 cleaner = Cleaner()
+
 
 @app.route("/")
 def index():
