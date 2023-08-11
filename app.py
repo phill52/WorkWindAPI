@@ -12,6 +12,7 @@ import os
 from .validator import Auth0JWTBearerTokenValidator
 from authlib.integrations.flask_oauth2 import ResourceProtector
 from flask_cors import CORS
+from bleach.sanitizer import Cleaner
 
 AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
 API_IDENTIFIER = os.environ.get("API_IDENTIFIER")
@@ -46,6 +47,8 @@ def get_user():
         else False
     )
 
+# Creating a Bleach sanitizer cleaner instance
+cleaner = Cleaner()
 
 @app.route("/")
 def index():
@@ -137,7 +140,7 @@ def project():
         if not request.is_json:
             return jsonify({"error": "The request payload is not in JSON format"}), 400
         data = request.get_json()
-        name = data["name"]
+        name = cleaner.clean(data["name"])
         if not (user := get_user()):
             return jsonify({"error": "Could not identify user"}), 400
         if (
@@ -159,6 +162,7 @@ def project():
 
 @app.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
 def handle_projectid(project_id):
+    project_id = cleaner.clean(project_id)
     if request.method == "GET":
         if (
             project := ProjectModel.query.filter(ProjectModel.pid == project_id).first()
