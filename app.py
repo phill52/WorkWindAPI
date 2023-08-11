@@ -131,7 +131,6 @@ def handle_userid(user_id):
 
 
 @app.route("/project", methods=["POST"])
-@require_auth()
 def project():
     if request.method == "POST":
         if not request.is_json:
