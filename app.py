@@ -59,33 +59,28 @@ def index():
 
 @app.route("/users", methods=["GET", "POST"])
 def users():
-    if request.method == "POST":
-        if request.is_json:
-            data = request.get_json()
-            username = data["username"].lower()
-            existing_user = UserModel.query.filter_by(username=username).first()
-            if existing_user is not None:
-                return jsonify({"error": "User already exists"}), 409
-            aid = request.aid
-            new_user = UserModel(auth_id=data["auth_id"], username=data["username"])
-            db.session.add(new_user)
-            db.session.commit()
-            return jsonify(
-                {
-                    "uid": new_user.uid,
-                    "auth_id": new_user.auth_id,
-                    "username": new_user.username,
-                }
-            )
-        else:
-            return jsonify({"error": "The request payload is not in JSON format"}), 400
-    elif request.method == "GET":
-        users = UserModel.query.all()
-        results = [
+    if request.method == "GET":
+        return jsonify(
             {"uid": user.uid, "auth_id": user.auth_id, "username": user.username}
-            for user in users
-        ]
-        return jsonify(results)
+            for user in UserModel.query.all()
+        )
+    elif request.method == "POST":
+        if not request.is_json:
+            return jsonify({"error": "The request payload is not in JSON format"}), 400
+        data = request.get_json()
+        username = cleaner.clean(data["username"])
+        if (UserModel.query.filter_by(username=username.lower()).first()) is not None:
+            return jsonify({"error": "User already exists"}), 409
+        new_user = UserModel(auth_id=data["auth_id"], username=username)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify(
+            {
+                "uid": new_user.uid,
+                "auth_id": new_user.auth_id,
+                "username": new_user.username,
+            }
+        )
 
 
 @app.route("/auth/users", methods=["GET"])
