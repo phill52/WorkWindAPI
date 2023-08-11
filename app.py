@@ -160,6 +160,7 @@ def project():
 @app.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
 def handle_projectid(project_id):
     project_id = cleaner.clean(project_id)
+    # Could use ProjectModel.query.get_or_404(project_id) instead
     if (project := ProjectModel.query.get(project_id)) is None:
         return jsonify({"error": "Project not found"}), 404
     elif request.method == "GET":
@@ -171,7 +172,10 @@ def handle_projectid(project_id):
         project.name = cleaner.clean(data["name"])
         db.session.commit()
         return jsonify(
-            {"pid": project.pid, "name": project.name, "created_by": project.created_by}
+            {
+                column.name: getattr(project, column.name)
+                for column in project.__table__.columns
+            }
         )
     elif request.method == "DELETE":
         db.session.delete(project)
