@@ -47,8 +47,10 @@ def get_user():
         else False
     )
 
+
 # Creating a Bleach sanitizer cleaner instance
 cleaner = Cleaner()
+
 
 @app.route("/")
 def index():
@@ -163,23 +165,23 @@ def project():
 @app.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
 def handle_projectid(project_id):
     project_id = cleaner.clean(project_id)
-    if request.method == "GET":
-        if (
-            project := ProjectModel.query.filter(ProjectModel.pid == project_id).first()
-        ) is None:
-            return jsonify({"error": "Project not found"}), 404
-        else:
-            return jsonify(
-                {
-                    "pid": project.pid,
-                    "name": project.name,
-                    "created_by": project.created_by,
-                }
-            )
+    if (project := ProjectModel.query.get(project_id)) is None:
+        return jsonify({"error": "Project not found"}), 404
+    elif request.method == "GET":
+        return jsonify(
+            {"pid": project.pid, "name": project.name, "created_by": project.created_by}
+        )
     elif request.method == "PUT":
-        pass
+        data = request.get_json()
+        project.name = cleaner.clean(data["name"])
+        db.session.commit()
+        return jsonify(
+            {"pid": project.pid, "name": project.name, "created_by": project.created_by}
+        )
     elif request.method == "DELETE":
-        pass
+        db.session.delete(project)
+        db.session.commit()
+        return jsonify({"message": "Project deleted successfully"}), 200
 
 
 if __name__ == "__main__":
