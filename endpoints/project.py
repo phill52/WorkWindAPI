@@ -3,6 +3,7 @@ from utils.user import get_user
 
 project_bp = Blueprint("project", __name__)
 
+
 @project_bp.route("/project", methods=["POST"])
 def project():
     if request.method == "POST":
@@ -27,6 +28,7 @@ def project():
                 "created_by": new_project.created_by,
             }
         )
+
 
 @project_bp.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
 def handle_projectid(project_id):
