@@ -29,23 +29,15 @@ app.config.from_object(DevelopmentConfig)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db = SQLAlchemy(app)
 
+from endpoints.project import project_bp
+
+app.register_blueprint(project_bp)
+
 
 from .models import *
 
 migrate = Migrate(app, db)
 CORS(app)
-
-
-# Function to return the current user
-@require_auth()
-def get_user():
-    aid = g.get("aid")
-    return (
-        user
-        if (user := UserModel.query.filter(UserModel.auth_id == aid).first())
-        is not None
-        else False
-    )
 
 
 # Creating a Bleach sanitizer cleaner instance
@@ -125,61 +117,6 @@ def handle_userid(user_id):
             db.session.delete(user)
             db.session.commit()
             return jsonify({"message": "User deleted successfully"}), 200
-
-
-# Project routes
-
-
-@app.route("/project", methods=["POST"])
-def project():
-    if request.method == "POST":
-        if not request.is_json:
-            return jsonify({"error": "The request payload is not in JSON format"}), 400
-        data = request.get_json()
-        name = cleaner.clean(data["name"])
-        if not (user := get_user()):
-            return jsonify({"error": "Could not identify user"}), 400
-        if (
-            ProjectModel.query.filter_by(name=name, user_id=user.uid).first()
-            is not None
-        ):
-            return jsonify({"error": "Project already exists"}), 409
-        new_project = ProjectModel(name=name, created_by=user.uid)
-        db.session.add(new_project)
-        db.session.commit()
-        return jsonify(
-            {
-                "pid": new_project.pid,
-                "name": new_project.name,
-                "created_by": new_project.created_by,
-            }
-        )
-
-
-@app.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
-def handle_projectid(project_id):
-    project_id = cleaner.clean(project_id)
-    # Could use ProjectModel.query.get_or_404(project_id) instead
-    if (project := ProjectModel.query.get(project_id)) is None:
-        return jsonify({"error": "Project not found"}), 404
-    elif request.method == "GET":
-        return jsonify(
-            {"pid": project.pid, "name": project.name, "created_by": project.created_by}
-        )
-    elif request.method == "PUT":
-        data = request.get_json()
-        project.name = cleaner.clean(data["name"])
-        db.session.commit()
-        return jsonify(
-            {
-                column.name: getattr(project, column.name)
-                for column in project.__table__.columns
-            }
-        )
-    elif request.method == "DELETE":
-        db.session.delete(project)
-        db.session.commit()
-        return jsonify({"message": "Project deleted successfully"}), 200
 
 
 if __name__ == "__main__":
