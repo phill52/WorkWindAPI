@@ -1,5 +1,6 @@
 from flask import Blueprint
 from utils.user import get_user
+from utils.validation import check_project_name
 
 project_bp = Blueprint("project", __name__)
 
@@ -11,6 +12,10 @@ def project():
             return jsonify({"error": "The request payload is not in JSON format"}), 400
         data = request.get_json()
         name = data["name"]
+        try:
+            name = check_project_name(data["name"])
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         if not (user := get_user()):
             return jsonify({"error": "Could not identify user"}), 400
         if (
@@ -32,7 +37,6 @@ def project():
 
 @project_bp.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
 def handle_projectid(project_id):
-    project_id = project_id
     # Could use ProjectModel.query.get_or_404(project_id) instead
     if (project := ProjectModel.query.get(project_id)) is None:
         return jsonify({"error": "Project not found"}), 404
@@ -43,6 +47,10 @@ def handle_projectid(project_id):
     elif request.method == "PUT":
         data = request.get_json()
         project.name = data["name"]
+        try:
+            project.name = check_project_name(project.name)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         db.session.commit()
         return jsonify(
             {
