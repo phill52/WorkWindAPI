@@ -62,3 +62,25 @@ def handle_projectid(project_id):
         db.session.delete(project)
         db.session.commit()
         return jsonify({"message": "Project deleted successfully"}), 200
+
+
+@project_bp.route("/project/share/<project_id>", methods=["POST"])
+def share_project(project_id):
+    if (project := ProjectModel.query.get(project_id)) is None:
+        return jsonify({"error": "Project not found"}), 404
+    elif request.method == "POST":
+        if not request.is_json:
+            return jsonify({"error": "The request payload is not in JSON format"}), 400
+        data = request.get_json()
+        username = data["username"]
+        if not (user := UserModel.query.filter_by(username=username).first()):
+            return jsonify({"error": "User not found"}), 404
+        new_share = SharedWithModel(uid=user.uid, pid=project_id)
+        db.session.add(new_share)
+        db.session.commit()
+        return jsonify(
+            {
+                "uid": new_share.uid,
+                "pid": new_share.pid,
+            }
+        )
