@@ -1,3 +1,4 @@
+import json
 from flask import Flask,  jsonify, request, abort, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -39,23 +40,38 @@ def index():
 def users():
     if request.method == 'POST':
         if request.is_json:
-            data=request.get_json()
+            data = request.get_json()
             #new_username=data[0]['username'].lower()
             aid = g.get('aid')
-            print("A_id is ", aid)
-            #existing_user = UserModel.query.filter_by(username=new_username).first()
+            print("A_id is", aid)
+            # existing_user = UserModel.query.filter_by(username=new_username).first()
             existing_user = UserModel.query.filter(UserModel.auth_id==aid).first()
-            print(existing_user)
-            if existing_user is not None:
-                return jsonify({"error": "User already exists"}), 409
-            new_user=UserModel(auth_id=aid, username=data[0]['username'],)
-            db.session.add(new_user)
-            db.session.commit()
-            return jsonify({"message": "Successfully created"}, {
-                "uid" : new_user.uid,
-                "auth_id": new_user.auth_id,
-                "username" : new_user.username
-            })
+            # if existing_user is not None:
+            #     return jsonify({"error": "User already exists"}), 409
+            new_user=UserModel(auth_id=aid, username=data[0]['username'], first_name=data[0]['first_name'],
+                            last_name=data[0]['last_name'], email=data[0]['email'])
+            new_username = new_user.username
+            if new_user is None:
+                return jsonify({"error": "User does not exist"}), 404
+            elif type(new_username) != str:
+                return jsonify({"error": "Update failed username is not of type string"}), 409
+            else:
+                new_username_length = len(new_username)
+                if new_username_length < 4 or new_username_length > 32:
+                    return jsonify({"error": "Update failed username length has to be in between 4-32 characters"}), 409
+                elif new_username.isalnum() == False:
+                    return jsonify({"error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"}), 409
+                else:
+                    db.session.add(new_user)
+                    db.session.commit()
+                    return jsonify({"message": "Successfully created"}, {
+                        # "uid" : new_user.uid,
+                        "auth_id": new_user.auth_id,
+                        "username" : new_user.username,
+                        "first_name": new_user.first_name,
+                        "last_name": new_user.last_name,
+                        "email": new_user.email
+                    })
         else: 
             return jsonify({"error": "The request payload is not in JSON format"}),400
     elif request.method == 'GET':
@@ -80,7 +96,7 @@ def handle_authid():
         else:
             return jsonify({"data": user})
 
-@app.route('/users/<user_id>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
+@app.route('/users/<user_id>', methods=['GET', 'PATCH', 'DELETE'])
 def request_users_by_id(user_id):
         if request.method == 'GET':
             print(user_id)
@@ -98,35 +114,37 @@ def request_users_by_id(user_id):
                     "last_name": user.last_name,
                     "email": user.email
                 })
-        elif request.method == 'POST':
-            new_user = UserModel.query.get(user_id)
+        elif request.method == 'PATCH':
             data = request.get_json()
-            new_user=UserModel(auth_id=data[0]['auth_id'], username=data[0]['username'],
-                                first_name=data[0]['first_name'], last_name=data[0]['last_name'],
-                                email=data[0]['email'])
-            new_username = new_user.username
-            if new_username is None:
-                return "Update failed username is required"
-            elif type(new_username) != str:
-                return "Update failed username is not of type string"
-            else:
-                new_username_length = len(new_username)
-                if new_username_length < 4 or new_username_length > 32:
-                    return "Update failed username length has to be in between 4 to 32 characters"
-                elif new_username.isalnum() == False:
-                    return "Update failed username must be alphanumeric characters only [A-Z] and [0-9]"
-                else:
-                    db.session.add(new_user)
-                    db.session.commit()
-                    return jsonify({"message": "Successfully created"}, {
-                        "auth_id": new_user.auth_id,
-                        "username": new_user.username,
-                        "first_name": new_user.first_name,
-                        "last_name": new_user.last_name,
-                        "email": new_user.email
-                    })
-        # elif request.method == 'PATCH':
-        #     data = request.get_json()
+
+            user = UserModel.query.filter(UserModel.uid == user_id).one_or_none()
+
+            if user is None:
+                return jsonify({"error": "User does not exist"}), 404
+            
+            if 'username' in data:
+                user.username = request.form['username']
+                print("Update username", user.username)
+            elif 'first_name' in data:
+                user.first_name = request.form['first_name']
+            elif 'last_name' in data:
+                user.last_name = request.form['last_name']
+            elif 'email' in data:
+                user.email = request.form['email']
+
+            user.verified = True
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Update successful',
+                "uid":user.uid,
+                    "auth_id": user.auth_id,
+                    "username": user.username,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "email": user.email
+            })
 
         elif request.method == 'DELETE':
             user=UserModel.query.get(user_id)
