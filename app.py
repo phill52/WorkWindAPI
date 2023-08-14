@@ -172,14 +172,14 @@ def handle_userid(user_id):
         if user is None:
             return jsonify({"error": "User not found"}), 404
         dumped_data = json.dumps(data)
-        if 'username' in dumped_data:
-            user.username = data[0]['username']
-        if 'first_name' in dumped_data:
+        if "username" in dumped_data:
+            user.username = data[0]["username"]
+        if "first_name" in dumped_data:
             print("entered second if")
             user.first_name = data[0]["first_name"]
-        if 'last_name' in dumped_data:
+        if "last_name" in dumped_data:
             user.last_name = data[0]["last_name"]
-        if 'email' in dumped_data:
+        if "email" in dumped_data:
             user.email = data[0]["email"]
 
         user.verified = True
