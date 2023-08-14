@@ -170,13 +170,13 @@ def handle_userid(user_id):
             return jsonify({"error": "User does not exist"}), 404
         print(data)
         # if data[0]['username'] is not None:
-        user.username = data[0]['username']
+        user.username = data[0]["username"]
         # elif data[0]['first_name'] is not None:
-        user.first_name = data[0]['first_name']
+        user.first_name = data[0]["first_name"]
         # elif data[0]['last_name'] is not None:
-        user.last_name = data[0]['last_name']
+        user.last_name = data[0]["last_name"]
         # elif data[0]['email'] is not None:
-        user.email = data[0]['email']
+        user.email = data[0]["email"]
 
         user.verified = True
         db.session.commit()
