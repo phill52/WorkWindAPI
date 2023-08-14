@@ -13,7 +13,7 @@ import os
 from .validator import Auth0JWTBearerTokenValidator
 from authlib.integrations.flask_oauth2 import ResourceProtector
 from flask_cors import CORS
-from bleach.sanitizer import Cleaner
+#from bleach.sanitizer import Cleaner
 
 AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
 API_IDENTIFIER = os.environ.get("API_IDENTIFIER")
@@ -50,7 +50,7 @@ def get_user():
 
 
 # Creating a Bleach sanitizer cleaner instance
-cleaner = Cleaner()
+#cleaner = Cleaner()
 
 
 @app.route("/")
@@ -137,20 +137,19 @@ def handle_userid(user_id):
             })
     elif request.method == 'PATCH':
         data = request.get_json()
-        user = UserModel.query.filter(UserModel.uid == user_id).one_or_none()
+        user = UserModel.query.get(user_id)
 
         if user is None:
             return jsonify({"error": "User does not exist"}), 404
-        
-        if 'username' in data:
-            user.username = request.form['username']
-            print("Update username", user.username)
-        elif 'first_name' in data:
-            user.first_name = request.form['first_name']
-        elif 'last_name' in data:
-            user.last_name = request.form['last_name']
-        elif 'email' in data:
-            user.email = request.form['email']
+        print(data)
+        # if data[0]['username'] is not None:
+        user.username = data[0]['username']
+        # elif data[0]['first_name'] is not None:
+        user.first_name = data[0]['first_name']
+        # elif data[0]['last_name'] is not None:
+        user.last_name = data[0]['last_name']
+        # elif data[0]['email'] is not None:
+        user.email = data[0]['email']
 
         user.verified = True
         db.session.commit()
