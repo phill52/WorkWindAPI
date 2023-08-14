@@ -59,6 +59,7 @@ def index():
 
 
 @app.route("/users", methods=["GET", "POST"])
+@require_auth()
 def users():
     if request.method == "POST":
         if request.is_json:
@@ -69,17 +70,27 @@ def users():
             else:
                 # username=data['username'].lower()
                 aid = g.get("aid")
-                existing_user = UserModel.query.filter(UserModel.auth_id == aid, UserModel.username == data[0]['username']).first()
-                if existing_user is not None:
-                    return jsonify({"error": "User already exists"}), 409
+                current_user_auth_id = UserModel.query.filter(UserModel.auth_id == aid).first()
+                current_user_username = UserModel.query.filter(UserModel.username == data['username']).first()
+                if current_user_auth_id is not None:
+                    return jsonify({"error": 
+                                    {"An account with that auth_id already exists", 
+                                     current_user_auth_id.username,
+                                     current_user_auth_id.email,
+                                     current_user_auth_id.first_name,
+                                     current_user_auth_id.last_name
+                                }}), 409
+                if current_user_username is not None:
+                    return jsonify({"error": 
+                                    {"An account with that username already exists"}}), 409
                 else:
                     # aid = request.aid
                     new_user = UserModel(
                         auth_id=aid,
-                        username=data[0]["username"],
-                        first_name=data[0]["first_name"],
-                        last_name=data[0]["last_name"],
-                        email=data[0]["email"],
+                        username=data["username"],
+                        first_name=data["first_name"],
+                        last_name=data["last_name"],
+                        email=data["email"],
                     )
                     new_username = new_user.username
                     if new_user is None:
@@ -101,12 +112,9 @@ def users():
                             )
                         elif new_username.isalnum() == False:
                             return (
-                                jsonify(
-                                    {
-                                        "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
-                                    }
-                                ),
-                                400
+                                jsonify({
+                                    "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
+                                }), 400
                             )
                         else:
                             db.session.add(new_user)
@@ -147,6 +155,7 @@ def handle_authid():
 
 
 @app.route("/users/<user_id>", methods=["GET", "PATCH", "DELETE"])
+@require_auth()
 def handle_userid(user_id):
     if request.method == "GET":
         a_id = g.get("aid")
@@ -173,14 +182,14 @@ def handle_userid(user_id):
             return jsonify({"error": "User not found"}), 404
         dumped_data = json.dumps(data)
         if "username" in dumped_data:
-            user.username = data[0]["username"]
+            user.username = data["username"]
         if "first_name" in dumped_data:
             print("entered second if")
-            user.first_name = data[0]["first_name"]
+            user.first_name = data["first_name"]
         if "last_name" in dumped_data:
-            user.last_name = data[0]["last_name"]
+            user.last_name = data["last_name"]
         if "email" in dumped_data:
-            user.email = data[0]["email"]
+            user.email = data["email"]
 
         user.verified = True
         db.session.commit()
