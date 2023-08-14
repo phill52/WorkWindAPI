@@ -64,12 +64,14 @@ def users():
         if request.is_json:
             data = request.get_json()
             dumped_data = json.dumps(data)
-            if 'username' not in dumped_data:
-                return jsonify({"error": "Username is not found"}), 404 
+            if "username" not in dumped_data:
+                return jsonify({"error": "Username is not found"}), 404
             else:
                 # username=data['username'].lower()
                 aid = g.get("aid")
-                existing_user = UserModel.query.filter(UserModel.auth_id == aid, UserModel.username == data[0]['username']).first()
+                existing_user = UserModel.query.filter(
+                    UserModel.auth_id == aid, UserModel.username == data[0]["username"]
+                ).first()
                 if existing_user is not None:
                     return jsonify({"error": "User already exists"}), 409
                 else:
@@ -86,8 +88,13 @@ def users():
                         return jsonify({"error": "User not found"}), 404
                     elif type(new_username) != str:
                         return (
-                            jsonify({"error": "Update failed username is not of type string"}),
-                            400)
+                            jsonify(
+                                {
+                                    "error": "Update failed username is not of type string"
+                                }
+                            ),
+                            400,
+                        )
                     else:
                         new_username_length = len(new_username)
                         if new_username_length < 4 or new_username_length > 32:
@@ -97,7 +104,7 @@ def users():
                                         "error": "Update failed username length has to be in between 4-32 characters"
                                     }
                                 ),
-                                400
+                                400,
                             )
                         elif new_username.isalnum() == False:
                             return (
@@ -106,7 +113,7 @@ def users():
                                         "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
                                     }
                                 ),
-                                400
+                                400,
                             )
                         else:
                             db.session.add(new_user)
