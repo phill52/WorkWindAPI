@@ -59,6 +59,7 @@ def index():
 
 
 @app.route("/users", methods=["GET", "POST"])
+@require_auth()
 def users():
     if request.method == "POST":
         if request.is_json:
