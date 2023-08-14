@@ -6,6 +6,7 @@ import os
 from .validator import Auth0JWTBearerTokenValidator
 from authlib.integrations.flask_oauth2 import ResourceProtector
 from flask_cors import CORS
+from .middleware import get_email
 
 AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
 API_IDENTIFIER = os.environ.get("API_IDENTIFIER")
@@ -66,10 +67,12 @@ def users():
 
 @app.route('/auth/users', methods=['GET'])
 @require_auth()
+@get_email
 def handle_authid():
     if request.method == 'GET':
         aid = g.get('aid') 
         print("this aids", aid)
+        print("this is email", g.get('email'))
         user=UserModel.query.filter(UserModel.auth_id==aid).first()
         if user is None:
             return jsonify({"data":False})
