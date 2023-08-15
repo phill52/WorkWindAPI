@@ -26,13 +26,14 @@ print(API_IDENTIFIER)
 #                 audience=API_IDENTIFIER,
 #                 issuer=f'https://{AUTH0_DOMAIN}/'
 #             )
-#         except JWTError: 
+#         except JWTError:
 #             return jsonify({"error": "Token is invalid"}), 401
 #         request.aid = payload['sub'] #adds the auth_id to the request object
 #         return f(*args, **kwargs)
 #     return decorated
 
-def get_email(f): #gets email from auth_token. should only be used after verify_token
+
+def get_email(f):  # gets email from auth_token. should only be used after verify_token
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.headers.get("Authorization")
