@@ -152,12 +152,14 @@ def handle_authid():
         if user is None:
             return jsonify({"data": False})
         else:
-            return jsonify({"data": 
+            return jsonify(
                 {
-                    column.name: getattr(user, column.name)
-                    for column in user.__table__.columns
+                    "data": {
+                        column.name: getattr(user, column.name)
+                        for column in user.__table__.columns
+                    }
                 }
-            })
+            )
 
 
 @app.route("/users/<user_id>", methods=["GET", "PATCH", "DELETE"])
