@@ -1,8 +1,23 @@
 from flask import Blueprint
 from utils.user import get_user
-from utils.validation import check_project_name
+from utils.validation import *
 
 project_bp = Blueprint("project", __name__)
+
+# Dictionary to map column names to validation functions
+column_check_map = {
+    "name": check_project_name,
+    "description": check_project_description,
+    "billing_address": check_address,
+    "billing_second_address": check_address,
+    "billing_city": check_city,
+    "billing_state": check_state,
+    "billing_zip": check_zip,
+    "billing_country": check_country,
+    "billing_phone": check_phone,
+    "billing_email": check_email,
+    "destination_email": check_email,
+}
 
 
 @project_bp.route("/project", methods=["POST"])
@@ -28,9 +43,8 @@ def project():
         db.session.commit()
         return jsonify(
             {
-                "pid": new_project.pid,
-                "name": new_project.name,
-                "created_by": new_project.created_by,
+                column.name: getattr(new_project, column.name)
+                for column in new_project.__table__.columns
             }
         )
 
@@ -42,15 +56,22 @@ def handle_projectid(project_id):
         return jsonify({"error": "Project not found"}), 404
     elif request.method == "GET":
         return jsonify(
-            {"pid": project.pid, "name": project.name, "created_by": project.created_by}
+            {
+                column.name: getattr(project, column.name)
+                for column in project.__table__.columns
+            }
         )
     elif request.method == "PUT":
         data = request.get_json()
-        project.name = data["name"]
-        try:
-            project.name = check_project_name(project.name)
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+        for data_key in data.keys():
+            if data_key in project.__table__.columns:
+                project[data_key] = data[data_key]
+                try:
+                    project[data_key] = column_check_map[data_key](project[data_key])
+                except ValueError as e:
+                    return jsonify({"error": str(e)}), 400
+                except KeyError:
+                    pass
         db.session.commit()
         return jsonify(
             {
@@ -80,7 +101,7 @@ def share_project(project_id):
         db.session.commit()
         return jsonify(
             {
-                "uid": new_share.uid,
-                "pid": new_share.pid,
+                column.name: getattr(new_share, column.name)
+                for column in new_share.__table__.columns
             }
         )
