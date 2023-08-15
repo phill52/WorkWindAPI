@@ -1,5 +1,6 @@
 import regex as re
 
+
 # Function to check if a string is valid
 def check_string(
     strVal,
