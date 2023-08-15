@@ -1,0 +1,15 @@
+name: Auto-Black-Formatter
+
+on: [push, pull_request]
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Black Formatter
+              uses: lgeiger/black-action@master
+              with:
+                  args: .
+            - name: Push Changes to Respository
+              uses: stefanzweifel/git-auto-commit-action@v4
