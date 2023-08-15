@@ -150,10 +150,18 @@ def handle_authid():
         aid = g.get("aid")
         print("this aids", aid)
         user = UserModel.query.filter(UserModel.auth_id == aid).first()
+        print(user)
         if user is None:
             return jsonify({"data": False})
         else:
-            return jsonify({"data": user})
+            return jsonify(
+                {
+                    "data": {
+                        column.name: getattr(user, column.name)
+                        for column in user.__table__.columns
+                    }
+                }
+            )
 
 
 @app.route("/users/<user_id>", methods=["GET", "PATCH", "DELETE"])
