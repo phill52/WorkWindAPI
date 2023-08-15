@@ -32,21 +32,17 @@ def check_string(
         if len(strVal) >= maxLength:
             raise ValueError(f"{strName} cannot be more than {maxLength} characters")
 
-    if noSpaces:
-        if " " in strVal:
-            raise ValueError(f"{strName} cannot contain spaces")
+    if noSpaces and " " in strVal:
+        raise ValueError(f"{strName} cannot contain spaces")
 
-    if alphaOnly:
-        if not re.match(r"^[a-zA-Z ]+$", strVal):
-            raise ValueError(f"{strName} must only contain letters")
+    if alphaOnly and not strVal.isalpha():
+        raise ValueError(f"{strName} must only contain letters")
 
-    if numericOnly:
-        if not re.match(r"^[0-9 ]+$", strVal):
-            raise ValueError(f"{strName} must only contain numbers")
+    if numericOnly and not strVal.isdigit():
+        raise ValueError(f"{strName} must only contain numbers")
 
-    if alphaNumericOnly:
-        if not re.match(r"^[a-zA-Z0-9 ]+$", strVal):
-            raise ValueError(f"{strName} must only contain letters and numbers")
+    if alphaNumericOnly and not strVal.isalnum():
+        raise ValueError(f"{strName} must only contain letters and numbers")
 
     if customRegex is not None:
         if not re.match(customRegex, strVal):
