@@ -65,9 +65,9 @@ def handle_projectid(project_id):
         data = request.get_json()
         for data_key in data.keys():
             if data_key in project.__table__.columns:
-                project[data_key] = data[data_key]
                 try:
-                    project[data_key] = column_check_map[data_key](project[data_key])
+                    data_value = column_check_map[data_key](data[data_key])
+                    project[data_key] = data_value
                 except ValueError as e:
                     return jsonify({"error": str(e)}), 400
                 except KeyError:
