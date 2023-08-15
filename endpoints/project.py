@@ -1,6 +1,7 @@
 from flask import Blueprint
 from utils.user import get_user
 from utils.validation import *
+from datetime import datetime
 
 project_bp = Blueprint("project", __name__)
 
@@ -26,19 +27,29 @@ def project():
         if not request.is_json:
             return jsonify({"error": "The request payload is not in JSON format"}), 400
         data = request.get_json()
-        name = data["name"]
-        try:
-            name = check_project_name(data["name"])
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+        new_project = ProjectModel()
+        for data_key in data.keys():
+            if data_key in new_project.__table__.columns:
+                try:
+                    data_value = column_check_map[data_key](data[data_key])
+                    new_project[data_key] = data_value
+                except ValueError as e:
+                    return jsonify({"error": str(e)}), 400
+                except KeyError:
+                    pass
+        if new_project.name is None:
+            return jsonify({"error": "Project name is required"}), 400
         if not (user := get_user()):
             return jsonify({"error": "Could not identify user"}), 400
         if (
-            ProjectModel.query.filter_by(name=name, user_id=user.uid).first()
+            ProjectModel.query.filter_by(
+                name=new_project.name, user_id=user.uid
+            ).first()
             is not None
         ):
             return jsonify({"error": "Project already exists"}), 409
-        new_project = ProjectModel(name=name, created_by=user.uid)
+        new_project.created_by = user.uid
+        new_project.date_created = datetime.now()
         db.session.add(new_project)
         db.session.commit()
         return jsonify(
