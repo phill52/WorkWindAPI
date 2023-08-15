@@ -1,5 +1,5 @@
 from flask import g
-from .models import UserModel
+from ..models import UserModel
 
 
 # Function to return the current user

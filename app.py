@@ -30,7 +30,7 @@ app.config.from_object(DevelopmentConfig)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db = SQLAlchemy(app)
 
-from endpoints.project import project_bp
+from .endpoints.project import project_bp
 
 app.register_blueprint(project_bp)
 

@@ -1,6 +1,6 @@
 from flask import Blueprint
-from utils.user import get_user
-from utils.validation import *
+from ..utils.user import get_user
+from ..utils.validation import *
 from datetime import datetime
 
 project_bp = Blueprint("project", __name__)
