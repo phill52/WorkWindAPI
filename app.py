@@ -1,3 +1,4 @@
+import json
 from flask import Flask, jsonify, request, abort, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -50,29 +51,86 @@ def index():
 
 
 @app.route("/users", methods=["GET", "POST"])
+@require_auth()
 def users():
-    if request.method == "GET":
-        return jsonify(
-            {"uid": user.uid, "auth_id": user.auth_id, "username": user.username}
-            for user in UserModel.query.all()
-        )
-    elif request.method == "POST":
-        if not request.is_json:
+    if request.method == "POST":
+        if request.is_json:
+            data = request.get_json()
+            dumped_data = json.dumps(data)
+            if "username" not in dumped_data:
+                return jsonify({"error": "Username is not found"}), 404
+            else:
+                # username=data['username'].lower()
+                aid = g.get("aid")
+                existing_user = UserModel.query.filter(
+                    UserModel.auth_id == aid, UserModel.username == data[0]["username"]
+                ).first()
+                if existing_user is not None:
+                    return jsonify({"error": "User already exists"}), 409
+                else:
+                    # aid = request.aid
+                    new_user = UserModel(
+                        auth_id=aid,
+                        username=data[0]["username"],
+                        first_name=data[0]["first_name"],
+                        last_name=data[0]["last_name"],
+                        email=data[0]["email"],
+                    )
+                    new_username = new_user.username
+                    if new_user is None:
+                        return jsonify({"error": "User not found"}), 404
+                    elif type(new_username) != str:
+                        return (
+                            jsonify(
+                                {
+                                    "error": "Update failed username is not of type string"
+                                }
+                            ),
+                            400,
+                        )
+                    else:
+                        new_username_length = len(new_username)
+                        if new_username_length < 4 or new_username_length > 32:
+                            return (
+                                jsonify(
+                                    {
+                                        "error": "Update failed username length has to be in between 4-32 characters"
+                                    }
+                                ),
+                                400,
+                            )
+                        elif new_username.isalnum() == False:
+                            return (
+                                jsonify(
+                                    {
+                                        "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
+                                    }
+                                ),
+                                400,
+                            )
+                        else:
+                            db.session.add(new_user)
+                            db.session.commit()
+                            return jsonify(
+                                {"message": "Successfully created"},
+                                {
+                                    # "uid" : new_user.uid,
+                                    "auth_id": new_user.auth_id,
+                                    "username": new_user.username,
+                                    "first_name": new_user.first_name,
+                                    "last_name": new_user.last_name,
+                                    "email": new_user.email,
+                                },
+                            )
+        else:
             return jsonify({"error": "The request payload is not in JSON format"}), 400
-        data = request.get_json()
-        username = cleaner.clean(data["username"])
-        if (UserModel.query.filter_by(username=username.lower()).first()) is not None:
-            return jsonify({"error": "User already exists"}), 409
-        new_user = UserModel(auth_id=data["auth_id"], username=username)
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify(
-            {
-                "uid": new_user.uid,
-                "auth_id": new_user.auth_id,
-                "username": new_user.username,
-            }
-        )
+    elif request.method == "GET":
+        users = UserModel.query.all()
+        results = [
+            {"uid": user.uid, "auth_id": user.auth_id, "username": user.username}
+            for user in users
+        ]
+        return jsonify(results)
 
 
 @app.route("/auth/users", methods=["GET"])
@@ -88,27 +146,58 @@ def handle_authid():
             return jsonify({"data": user})
 
 
-@app.route("/users/<user_id>", methods=["GET", "PUT", "DELETE"])
+@app.route("/users/<user_id>", methods=["GET", "PATCH", "DELETE"])
 def handle_userid(user_id):
     if request.method == "GET":
-        user = UserModel.query.filter(UserModel.uid == user_id).first()
+        a_id = g.get("aid")
+        user = UserModel.query.filter(
+            UserModel.uid == user_id and UserModel.auth_id == a_id
+        ).first()
         if user is None:
             return jsonify({"error": "User not found"}), 404
         else:
             return jsonify(
-                {"uid": user.uid, "auth_id": user.auth_id, "username": user.username}
+                {
+                    "uid": user.uid,
+                    "auth_id": user.auth_id,
+                    "username": user.username,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "email": user.email,
+                }
             )
-    elif request.method == "PUT":
+    elif request.method == "PATCH":
+        data = request.get_json()
         user = UserModel.query.get(user_id)
         if user is None:
             return jsonify({"error": "User not found"}), 404
-        else:
-            data = request.get_json()
-            user.username = data["username"]
-            db.session.commit()
-            return jsonify(
-                {"uid": user.uid, "auth_id": user.auth_id, "username": user.username}
-            )
+        dumped_data = json.dumps(data)
+        if "username" in dumped_data:
+            user.username = data[0]["username"]
+        if "first_name" in dumped_data:
+            print("entered second if")
+            user.first_name = data[0]["first_name"]
+        if "last_name" in dumped_data:
+            user.last_name = data[0]["last_name"]
+        if "email" in dumped_data:
+            user.email = data[0]["email"]
+
+        user.verified = True
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Update successful",
+                "uid": user.uid,
+                "auth_id": user.auth_id,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+            }
+        )
+
     elif request.method == "DELETE":
         user = UserModel.query.get(user_id)
         if user is None:
@@ -117,6 +206,41 @@ def handle_userid(user_id):
             db.session.delete(user)
             db.session.commit()
             return jsonify({"message": "User deleted successfully"}), 200
+
+
+# @app.route('/users/<user_id>', methods=['GET', 'PUT', 'DELETE'])
+# def handle_userid(user_id):
+#     if request.method == 'GET':
+#         user=UserModel.query.filter(UserModel.uid==user_id).first()
+#         if user is None:
+#             return jsonify({"error": "User not found"}), 404
+#         else:
+#             return jsonify({
+#                 "uid": user.uid,
+#                 "auth_id": user.auth_id,
+#                 "username": user.username
+#             })
+#     elif request.method == 'PUT':
+#         user=UserModel.query.get(user_id)
+#         if user is None:
+#             return jsonify({"error": "User not found"}), 404
+#         else:
+#             data=request.get_json()
+#             user.username=data['username']
+#             db.session.commit()
+#             return jsonify({
+#                 "uid": user.uid,
+#                 "auth_id": user.auth_id,
+#                 "username": user.username
+#             })
+#     elif request.method == 'DELETE' :
+#         user=UserModel.query.get(user_id)
+#         if user is None:
+#             return jsonify({"error": "User not found"}), 404
+#         else:
+#             db.session.delete(user)
+#             db.session.commit()
+#             return jsonify({"message": "User deleted successfully"}), 200
 
 
 if __name__ == "__main__":
