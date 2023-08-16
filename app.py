@@ -13,7 +13,6 @@ import os
 from .validator import Auth0JWTBearerTokenValidator
 from authlib.integrations.flask_oauth2 import ResourceProtector
 from flask_cors import CORS
-from .middleware import get_email
 from bleach.sanitizer import Cleaner
 
 AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
