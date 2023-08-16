@@ -71,6 +71,7 @@ def users():
             else:
                 # username=data['username'].lower()
                 aid = g.get("aid")
+                email = g.get("email")
                 existing_user = UserModel.query.filter(
                     UserModel.auth_id == aid, UserModel.username == data[0]["username"]
                 ).first()
@@ -83,7 +84,7 @@ def users():
                         username=data[0]["username"],
                         first_name=data[0]["first_name"],
                         last_name=data[0]["last_name"],
-                        email=data[0]["email"],
+                        email=email,
                     )
                     new_username = new_user.username
                     if new_user is None:
@@ -144,13 +145,12 @@ def users():
 
 @app.route("/auth/users", methods=["GET"])
 @require_auth()
-@get_email
 def handle_authid():
     if request.method == "GET":
         aid = g.get("aid")
         print("this aids", aid)
         user = UserModel.query.filter(UserModel.auth_id == aid).first()
-        print(user)
+        print(g.get("email"))
         if user is None:
             return jsonify({"data": False})
         else:

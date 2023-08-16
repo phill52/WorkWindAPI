@@ -29,6 +29,7 @@ class Auth0JWTBearerTokenValidator(JWTBearerTokenValidator):
                 )  # Split by the pipe character and take the second part
                 logging.info(f"Token is authenticated: {token}")
                 g.aid = aid
+                g.email = token.get("email")
             else:
                 logging.warning(f"Token is not authenticated")
             return token
