@@ -65,37 +65,69 @@ def users():
         if request.is_json:
             data = request.get_json()
             dumped_data = json.dumps(data)
+
+            if type(data["username"]) != str:
+                return (
+                    jsonify({"error": "Update failed username is not of type string"}),
+                    400,
+                )
             if "username" not in dumped_data:
                 return jsonify({"error": "Username is not found"}), 404
             else:
                 # username=data['username'].lower()
                 aid = g.get("aid")
-                existing_user = UserModel.query.filter(
-                    UserModel.auth_id == aid, UserModel.username == data[0]["username"]
+                print("Aid is", aid)
+                current_user_auth_id = UserModel.query.filter(
+                    UserModel.auth_id == aid
                 ).first()
-                if existing_user is not None:
-                    return jsonify({"error": "User already exists"}), 409
+                current_user_username = UserModel.query.filter(
+                    UserModel.username == data["username"]
+                ).first()
+                if current_user_auth_id is not None:
+                    return jsonify(
+                        [
+                            {
+                                "error": "An account with that auth_id alreay exists",
+                                "data": [
+                                    {
+                                        "username": current_user_auth_id.username,
+                                        "first_name": current_user_auth_id.first_name,
+                                        "last_name": current_user_auth_id.last_name,
+                                        "email": current_user_auth_id.email,
+                                    },
+                                    409,
+                                ],
+                            }
+                        ]
+                    )
+                if current_user_username is not None:
+                    return (
+                        jsonify(
+                            {"error": "An account with that username already exists"}
+                        ),
+                        409,
+                    )
                 else:
                     # aid = request.aid
                     new_user = UserModel(
                         auth_id=aid,
-                        username=data[0]["username"],
-                        first_name=data[0]["first_name"],
-                        last_name=data[0]["last_name"],
-                        email=data[0]["email"],
+                        username=data["username"],
+                        first_name=data["first_name"],
+                        last_name=data["last_name"],
+                        email=data["email"],
                     )
                     new_username = new_user.username
                     if new_user is None:
                         return jsonify({"error": "User not found"}), 404
-                    elif type(new_username) != str:
-                        return (
-                            jsonify(
-                                {
-                                    "error": "Update failed username is not of type string"
-                                }
-                            ),
-                            400,
-                        )
+                    # elif type(new_username) != str:
+                    #     return (
+                    #         jsonify(
+                    #             {
+                    #                 "error": "Update failed username is not of type string"
+                    #             }
+                    #         ),
+                    #         400,
+                    #     )
                     else:
                         new_username_length = len(new_username)
                         if new_username_length < 4 or new_username_length > 32:
@@ -120,15 +152,17 @@ def users():
                             db.session.add(new_user)
                             db.session.commit()
                             return jsonify(
-                                {"message": "Successfully created"},
-                                {
-                                    # "uid" : new_user.uid,
-                                    "auth_id": new_user.auth_id,
-                                    "username": new_user.username,
-                                    "first_name": new_user.first_name,
-                                    "last_name": new_user.last_name,
-                                    "email": new_user.email,
-                                },
+                                [
+                                    {"message": "Successfully created"},
+                                    {
+                                        # "uid" : new_user.uid,
+                                        "auth_id": new_user.auth_id,
+                                        "username": new_user.username,
+                                        "first_name": new_user.first_name,
+                                        "last_name": new_user.last_name,
+                                        "email": new_user.email,
+                                    },
+                                ]
                             )
         else:
             return jsonify({"error": "The request payload is not in JSON format"}), 400
@@ -163,6 +197,7 @@ def handle_authid():
 
 
 @app.route("/users/<user_id>", methods=["GET", "PATCH", "DELETE"])
+@require_auth()
 def handle_userid(user_id):
     if request.method == "GET":
         a_id = g.get("aid")
@@ -185,18 +220,64 @@ def handle_userid(user_id):
     elif request.method == "PATCH":
         data = request.get_json()
         user = UserModel.query.get(user_id)
+        username_len = len(data["username"])
         if user is None:
             return jsonify({"error": "User not found"}), 404
         dumped_data = json.dumps(data)
         if "username" in dumped_data:
-            user.username = data[0]["username"]
+            if type(data["username"]) != str:
+                return (
+                    jsonify({"error": "Update failed username is not of type string"}),
+                    400,
+                )
+            if username_len < 4 or username_len > 32:
+                return (
+                    jsonify(
+                        {
+                            "error": "Update failed username length has to be in between 4-32 characters"
+                        }
+                    ),
+                    400,
+                )
+            else:
+                if data["username"].isalnum() == False:
+                    return (
+                        jsonify(
+                            {
+                                "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
+                            }
+                        ),
+                        400,
+                    )
+
+                else:
+                    user.username = data["username"]
         if "first_name" in dumped_data:
-            print("entered second if")
-            user.first_name = data[0]["first_name"]
+            if type(data["first_name"]) != str:
+                return (
+                    jsonify(
+                        {"error": "Update failed first_name is not of type string"}
+                    ),
+                    400,
+                )
+            else:
+                user.first_name = data["first_name"]
         if "last_name" in dumped_data:
-            user.last_name = data[0]["last_name"]
+            if type(data["last_name"]) != str:
+                return (
+                    jsonify({"error": "Update failed last_name is not of type string"}),
+                    400,
+                )
+            else:
+                user.last_name = data["last_name"]
         if "email" in dumped_data:
-            user.email = data[0]["email"]
+            if type(data["email"]) != str:
+                return (
+                    jsonify({"error": "Update failed email is not of type string"}),
+                    400,
+                )
+            else:
+                user.email = data["email"]
 
         user.verified = True
         db.session.commit()
