@@ -65,7 +65,7 @@ def users():
         if request.is_json:
             data = request.get_json()
             dumped_data = json.dumps(data)
-            
+
             if "username" not in dumped_data:
                 return jsonify({"error": "Username is not found"}), 404
 
@@ -74,7 +74,7 @@ def users():
                     jsonify({"error": "Update failed username is not of type string"}),
                     400,
                 )
-            
+
             else:
                 # username=data['username'].lower()
                 aid = g.get("aid")
