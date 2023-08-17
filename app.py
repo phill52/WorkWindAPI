@@ -194,7 +194,7 @@ def handle_authid():
 
 
 @app.route("/users/<user_id>", methods=["GET", "PATCH", "DELETE"])
-# @require_auth()
+@require_auth()
 def handle_userid(user_id):
     if request.method == "GET":
         a_id = g.get("aid")
