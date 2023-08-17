@@ -68,13 +68,9 @@ def users():
 
             if type(data["username"]) != str:
                 return (
-                            jsonify(
-                                {
-                                    "error": "Update failed username is not of type string"
-                                }
-                            ),
-                            400,
-                        )
+                    jsonify({"error": "Update failed username is not of type string"}),
+                    400,
+                )
             if "username" not in dumped_data:
                 return jsonify({"error": "Username is not found"}), 404
             else:
@@ -166,7 +162,6 @@ def users():
                                         "last_name": new_user.last_name,
                                         "email": new_user.email,
                                     },
-
                                 ]
                             )
         else:
@@ -223,10 +218,8 @@ def handle_userid(user_id):
         dumped_data = json.dumps(data)
         if "username" in dumped_data:
             if type(data["username"]) != str:
-                return (jsonify(
-                    {
-                        "error": "Update failed username is not of type string"
-                    }),
+                return (
+                    jsonify({"error": "Update failed username is not of type string"}),
                     400,
                 )
             if username_len < 4 or username_len > 32:
@@ -240,41 +233,39 @@ def handle_userid(user_id):
                 )
             else:
                 if data["username"].isalnum() == False:
-                    return (jsonify(
-                        {
-                            "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
-                        }),
+                    return (
+                        jsonify(
+                            {
+                                "error": "Update failed username must be alphanumeric characters [A-Z] and [0-9]"
+                            }
+                        ),
                         400,
                     )
-                
+
                 else:
                     user.username = data["username"]
         if "first_name" in dumped_data:
             if type(data["first_name"]) != str:
-                return (jsonify(
-                    {
-                        "error": "Update failed first_name is not of type string"
-                    }),
+                return (
+                    jsonify(
+                        {"error": "Update failed first_name is not of type string"}
+                    ),
                     400,
                 )
             else:
                 user.first_name = data["first_name"]
         if "last_name" in dumped_data:
             if type(data["last_name"]) != str:
-                return (jsonify(
-                    {
-                        "error": "Update failed last_name is not of type string"
-                    }),
+                return (
+                    jsonify({"error": "Update failed last_name is not of type string"}),
                     400,
                 )
             else:
                 user.last_name = data["last_name"]
         if "email" in dumped_data:
             if type(data["email"]) != str:
-                return (jsonify(
-                    {
-                        "error": "Update failed email is not of type string"
-                    }),
+                return (
+                    jsonify({"error": "Update failed email is not of type string"}),
                     400,
                 )
             else:
