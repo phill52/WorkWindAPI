@@ -68,11 +68,25 @@ def users():
 
             if "username" not in dumped_data:
                 return jsonify({"error": "Username is not found"}), 404
+            
+            if "first_name" not in dumped_data:
+                return jsonify({"error": "First Name is not found"}), 404
+            
+            if "last_name" not in dumped_data:
+                return jsonify({"error": "Last Name is not found"}), 404
 
             elif type(data["username"]) != str:
                 return (
                     jsonify({"error": "Update failed username is not of type string"}),
                     400,
+                )
+            elif type(data["first_name"]) != str:
+                return (
+                    jsonify({"error": "First name is not of type string"}), 400
+                )
+            elif type(data["last_name"]) != str:
+                return (
+                    jsonify({"error": "Last name is not of type string"}), 400
                 )
 
             else:
@@ -109,14 +123,14 @@ def users():
                         jsonify(
                             {"error": "An account with that username already exists"}
                         ),
-                        409,
+                        400,
                     )
                 else:
                     # aid = request.aid
                     new_user = UserModel(
                         auth_id=aid,
                         username=data["username"],
-                        first_name=data["first_name"],
+                        first_name= data["first_name"],
                         last_name=data["last_name"],
                         email=curr_email,
                     )
@@ -301,13 +315,17 @@ def handle_userid(user_id):
 
     elif request.method == "DELETE":
         user = UserModel.query.get(user_id)
+        a_id = g.get("aid")
         if user is None:
             return jsonify({"error": "User not found"}), 404
+        elif user.auth_id != a_id:
+            return jsonify({"error": "A user cannot delete another person's account"}), 403
+        
         else:
             db.session.delete(user)
             db.session.commit()
             return jsonify({"message": "User deleted successfully"}), 200
-
+                
 
 # @app.route('/users/<user_id>', methods=['GET', 'PUT', 'DELETE'])
 # def handle_userid(user_id):
