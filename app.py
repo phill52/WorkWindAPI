@@ -238,13 +238,18 @@ def handle_userid(user_id):
         if user is None:
             return jsonify({"error": "User not found"}), 404
         if user.auth_id != a_id:
-            return jsonify({"error": "A user can't update another user's information"}), 403
+            return (
+                jsonify({"error": "A user can't update another user's information"}),
+                403,
+            )
         else:
             dumped_data = json.dumps(data)
             if "username" in dumped_data:
                 if type(data["username"]) != str:
                     return (
-                        jsonify({"error": "Update failed username is not of type string"}),
+                        jsonify(
+                            {"error": "Update failed username is not of type string"}
+                        ),
                         400,
                     )
                 username_len = len(data["username"])
@@ -283,7 +288,9 @@ def handle_userid(user_id):
             if "last_name" in dumped_data:
                 if type(data["last_name"]) != str:
                     return (
-                        jsonify({"error": "Update failed last_name is not of type string"}),
+                        jsonify(
+                            {"error": "Update failed last_name is not of type string"}
+                        ),
                         400,
                     )
                 else:
