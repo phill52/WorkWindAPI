@@ -119,7 +119,7 @@ def users():
                         jsonify(
                             {"error": "An account with that username already exists"}
                         ),
-                        400,
+                        403,
                     )
                 else:
                     # aid = request.aid
