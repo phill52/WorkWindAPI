@@ -44,13 +44,13 @@ def project():
             return jsonify({"error": "Could not identify user"}), 400
         if (
             ProjectModel.query.filter_by(
-                name=new_project.name, user_id=user.uid
+                name=new_project.name, created_by=user.uid
             ).first()
             is not None
         ):
             return jsonify({"error": "Project already exists"}), 409
-        new_project.created_by = user.uid
-        new_project.date_created = datetime.now()
+        new_project.__setitem__("created_by", user.uid)
+        new_project.__setitem__("date_created", datetime.now())
         db.session.add(new_project)
         db.session.commit()
         return jsonify(
