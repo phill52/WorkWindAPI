@@ -1,7 +1,8 @@
-from flask import Blueprint
+from flask import Blueprint, request, jsonify
 from ..utils.user import get_user
 from ..utils.validation import *
 from datetime import datetime
+from ..models import db, ProjectModel, UserModel, SharedWithModel
 
 project_bp = Blueprint("project", __name__)
 
@@ -32,7 +33,7 @@ def project():
             if data_key in new_project.__table__.columns:
                 try:
                     data_value = column_check_map[data_key](data[data_key])
-                    new_project[data_key] = data_value
+                    new_project.__setitem__(data_key, data_value)
                 except ValueError as e:
                     return jsonify({"error": str(e)}), 400
                 except KeyError:
@@ -54,7 +55,7 @@ def project():
         db.session.commit()
         return jsonify(
             {
-                column.name: getattr(new_project, column.name)
+                column.name: new_project.__getitem__(column.name)
                 for column in new_project.__table__.columns
             }
         )
@@ -78,7 +79,7 @@ def handle_projectid(project_id):
             if data_key in project.__table__.columns:
                 try:
                     data_value = column_check_map[data_key](data[data_key])
-                    project[data_key] = data_value
+                    project.__setitem__(data_key, data_value)
                 except ValueError as e:
                     return jsonify({"error": str(e)}), 400
                 except KeyError:
@@ -86,8 +87,8 @@ def handle_projectid(project_id):
         db.session.commit()
         return jsonify(
             {
-                column.name: getattr(project, column.name)
-                for column in project.__table__.columns
+                column.name: new_project.__getitem__(column.name)
+                for column in new_project.__table__.columns
             }
         )
     elif request.method == "DELETE":
@@ -112,7 +113,7 @@ def share_project(project_id):
         db.session.commit()
         return jsonify(
             {
-                column.name: getattr(new_share, column.name)
-                for column in new_share.__table__.columns
+                column.name: new_project.__getitem__(column.name)
+                for column in new_project.__table__.columns
             }
         )

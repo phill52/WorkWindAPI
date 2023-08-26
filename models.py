@@ -47,19 +47,19 @@ class ProjectModel(db.Model):
 
     def __init__(
         self,
-        created_by,
-        name,
-        description,
-        date_created,
-        billing_address,
-        billing_secondary_address,
-        billing_city,
-        billing_state,
-        billing_zip,
-        billing_country,
-        billing_phone,
-        billing_email,
-        destination_email,
+        created_by=None,
+        name=None,
+        description=None,
+        date_created=None,
+        billing_address=None,
+        billing_secondary_address=None,
+        billing_city=None,
+        billing_state=None,
+        billing_zip=None,
+        billing_country=None,
+        billing_phone=None,
+        billing_email=None,
+        destination_email=None,
     ):
         self.created_by = created_by
         self.name = name
@@ -74,6 +74,12 @@ class ProjectModel(db.Model):
         self.billing_phone = billing_phone
         self.billing_email = billing_email
         self.destination_email = destination_email
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+    def __setitem__(self, item, value):
+        return setattr(self, item, value)
 
 
 class SharedWithModel(db.Model):
