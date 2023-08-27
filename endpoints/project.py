@@ -3,6 +3,16 @@ from ..utils.user import get_user
 from ..utils.validation import *
 from datetime import datetime
 from ..models import db, ProjectModel, UserModel, SharedWithModel
+import os
+from ..validator import Auth0JWTBearerTokenValidator
+from authlib.integrations.flask_oauth2 import ResourceProtector
+
+AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
+API_IDENTIFIER = os.environ.get("API_IDENTIFIER")
+
+require_auth = ResourceProtector()
+validator = Auth0JWTBearerTokenValidator(AUTH0_DOMAIN, API_IDENTIFIER)
+require_auth.register_token_validator(validator)
 
 project_bp = Blueprint("project", __name__)
 
@@ -22,7 +32,19 @@ column_check_map = {
 }
 
 
+def check_creator(project):
+    error, error_code = None, None
+    if not (user := get_user()):
+        error = "Could not identify user"
+        error_code = 400
+    elif project.created_by != user.uid:
+        error = "User is not the creator of this project"
+        error_code = 403
+    return error, error_code
+
+
 @project_bp.route("/project", methods=["POST"])
+@require_auth()
 def project():
     if request.method == "POST":
         if not request.is_json:
@@ -62,6 +84,7 @@ def project():
 
 
 @project_bp.route("/project/<project_id>", methods=["GET", "PUT", "DELETE"])
+@require_auth()
 def handle_projectid(project_id):
     # Could use ProjectModel.query.get_or_404(project_id) instead
     if (project := ProjectModel.query.get(project_id)) is None:
@@ -69,12 +92,14 @@ def handle_projectid(project_id):
     elif request.method == "GET":
         return jsonify(
             {
-                column.name: getattr(project, column.name)
+                column.name: project.__getitem__(column.name)
                 for column in project.__table__.columns
             }
         )
     elif request.method == "PUT":
         data = request.get_json()
+        if (error, error_code := check_creator(project)) is not None:
+            return jsonify({"error": error}), error_code
         for data_key in data.keys():
             if data_key in project.__table__.columns:
                 try:
@@ -92,12 +117,15 @@ def handle_projectid(project_id):
             }
         )
     elif request.method == "DELETE":
+        if (error, error_code := check_creator(project)) is not None:
+            return jsonify({"error": error}), error_code
         db.session.delete(project)
         db.session.commit()
         return jsonify({"message": "Project deleted successfully"}), 200
 
 
 @project_bp.route("/project/share/<project_id>", methods=["POST"])
+@require_auth()
 def share_project(project_id):
     if (project := ProjectModel.query.get(project_id)) is None:
         return jsonify({"error": "Project not found"}), 404
